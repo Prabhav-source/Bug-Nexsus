@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Note: SQLite does not support native enums, so role/status fields are
+// stored as strings constrained by application-level Zod validation.
+// Values match the original enum members (e.g. "CRITICAL", "IN_PROGRESS").
+
+model User {
+  id           String              @id @default(cuid())
+  email        String              @unique
+  name         String
+  passwordHash String
+  role         String              @default("MEMBER")
+  color        String              @default("#FF1744")
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  memberships        WorkspaceMembership[]
+  projectMemberships ProjectMembership[]
+  reportedIssues     Issue[]             @relation("Reporter")
+  assignedIssues     Issue[]             @relation("Assignee")
+  comments           Comment[]
+  notifications      Notification[]
+  activityEvents     ActivityEvent[]
+  attachments        AttachmentMetadata[]
+}
+
+model Workspace {
+  id          String              @id @default(cuid())
+  name        String
+  slug        String              @unique
+  createdAt   DateTime            @default(now())
+
+  memberships WorkspaceMembership[]
+  projects    Project[]
+  labels      Label[]
+  activity    ActivityEvent[]
+}
+
+model WorkspaceMembership {
+  id          String    @id @default(cuid())
+  role        String    @default("MEMBER")
+  joinedAt    DateTime  @default(now())
+
+  userId      String
+  workspaceId String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+}
+
+model Project {
+  id          String         @id @default(cuid())
+  name        String
+  slug        String
+  description String?
+  status      String         @default("ACTIVE")
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  workspaceId String
+  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  members     ProjectMembership[]
+  issues      Issue[]
+  sprints     Sprint[]
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId])
+}
+
+model ProjectMembership {
+  id     String   @id @default(cuid())
+  role   String   @default("MEMBER")
+  joinedAt DateTime @default(now())
+
+  userId    String
+  projectId String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@index([projectId])
+}
+
+model Issue {
+  id                String      @id @default(cuid())
+  key               String
+  title             String
+  description       String?
+  reproductionSteps String?
+  expectedResult    String?
+  actualResult      String?
+  severity          String      @default("MEDIUM")
+  status            String      @default("OPEN")
+  type              String      @default("BUG")
+  environment       String?
+  browser           String?
+  os                String?
+  dueDate           DateTime?
+  archived          Boolean     @default(false)
+  resolvedAt        DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  reporterId String
+  reporter   User    @relation("Reporter", fields: [reporterId], references: [id])
+  assigneeId String?
+  assignee   User?    @relation("Assignee", fields: [assigneeId], references: [id])
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  sprintId String?
+  sprint   Sprint?  @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+
+  labels            IssueLabel[]
+  comments          Comment[]
+  attachments       AttachmentMetadata[]
+  relatedFrom       IssueRelation[] @relation("Source")
+  relatedTo         IssueRelation[] @relation("Target")
+
+  @@unique([projectId, key])
+  @@index([projectId, status])
+  @@index([assigneeId])
+  @@index([severity])
+  @@index([createdAt])
+}
+
+model IssueRelation {
+  id   String @id @default(cuid())
+  type String @default("RELATED")
+
+  sourceId String
+  targetId String
+  source   Issue  @relation("Source", fields: [sourceId], references: [id], onDelete: Cascade)
+  target   Issue  @relation("Target", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, targetId, type])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  body      String
+  createdAt DateTime @default(now())
+
+  issueId String
+  issue   Issue  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  @@index([issueId])
+}
+
+model Label {
+  id          String    @id @default(cuid())
+  name        String
+  color       String    @default("#FF1744")
+  createdAt   DateTime  @default(now())
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  issues      IssueLabel[]
+
+  @@unique([workspaceId, name])
+}
+
+model IssueLabel {
+  issueId String
+  labelId String
+  issue   Issue  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  label   Label  @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([issueId, labelId])
+  @@index([labelId])
+}
+
+model Sprint {
+  id        String   @id @default(cuid())
+  name      String
+  goal      String?
+  startDate DateTime
+  endDate   DateTime
+  status    String   @default("PLANNED")
+  createdAt DateTime @default(now())
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  issues    Issue[]
+
+  @@index([projectId])
+}
+
+model ActivityEvent {
+  id          String   @id @default(cuid())
+  type        String
+  payload     String?
+  createdAt   DateTime @default(now())
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  projectId String?
+  issueId   String?
+  actorId   String
+  actor     User    @relation(fields: [actorId], references: [id])
+
+  @@index([workspaceId, createdAt])
+  @@index([issueId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  issueId   String?
+  projectId String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+}
+
+model AttachmentMetadata {
+  id          String   @id @default(cuid())
+  fileName    String
+  size        Int
+  mimeType    String
+  url         String
+  createdAt   DateTime @default(now())
+
+  issueId String
+  issue   Issue  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  uploadedById String
+  uploadedBy   User   @relation(fields: [uploadedById], references: [id])
+}

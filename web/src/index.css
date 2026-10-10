@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-background text-text-primary font-sans antialiased;
+  background-image:
+    radial-gradient(ellipse 60% 32% at 50% -8%, rgba(255, 23, 68, 0.07), transparent 70%),
+    radial-gradient(ellipse 40% 28% at 100% 100%, rgba(217, 4, 41, 0.04), transparent 70%);
+  background-attachment: fixed;
+  font-feature-settings: 'cv11', 'ss01';
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Atmospheric grid overlay — barely visible */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* Scrollbars — slim, quiet */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #26232a;
+  border-radius: 8px;
+  border: none;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #302d38;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #26232a transparent;
+}
+
+/* Selection — crimson tint */
+::selection {
+  background: rgba(255, 23, 68, 0.28);
+  color: #F5F5F7;
+}
+
+/* Focus ring — crimson */
+:focus-visible {
+  outline: 2px solid rgba(255, 23, 68, 0.45);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Inputs */
+input,
+select,
+textarea {
+  color-scheme: dark;
+}
+
+/* Native dropdown options — force dark */
+select option,
+select optgroup {
+  background-color: #121214;
+  color: #F5F5F7;
+}
+
+/* Calendar / time picker popups */
+::-webkit-calendar-picker-indicator {
+  filter: invert(0.6);
+}
+
+/* Shared shimmer fallback */
+@keyframes shimmer-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Recharts dark theme defaults */
+.recharts-cartesian-axis-tick text {
+  fill: #71717A;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.recharts-cartesian-grid line {
+  stroke: #29292F;
+}
+.recharts-tooltip-cursor {
+  stroke: #3a3446;
+}
+.recharts-legend-wrapper span {
+  font-family: 'Inter', system-ui, sans-serif !important;
+}

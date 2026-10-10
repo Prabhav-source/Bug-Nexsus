@@ -1,0 +1,31 @@
+{
+  "name": "bugnexus",
+  "version": "2.0.0",
+  "private": true,
+  "description": "BUGNEXUS 2.0 — Full-Stack Bug Tracking & Developer Intelligence Platform",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,web -c red,cyan \"npm run dev --workspace server\" \"npm run dev --workspace web\"",
+    "dev:server": "npm run dev --workspace server",
+    "dev:web": "npm run dev --workspace web",
+    "build": "npm run build --workspace server && npm run build --workspace web",
+    "build:server": "npm run build --workspace server",
+    "build:web": "npm run build --workspace web",
+    "db:generate": "npm run --workspace server prisma generate",
+    "db:migrate": "npm run --workspace server prisma migrate dev",
+    "db:push": "npm run --workspace server prisma db push",
+    "db:seed": "npm run --workspace server prisma db seed",
+    "db:studio": "npm run --workspace server prisma studio",
+    "test": "npm run test --workspace server",
+    "start": "npm run start --workspace server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
